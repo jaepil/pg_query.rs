@@ -15,6 +15,34 @@ mod support;
 use support::*;
 
 #[test]
+fn it_parses_plpgsql_expressions_without_rewriting_source() {
+    let result = pg_query::parse_with_mode("value + 1", pg_query::ParseMode::PlPgSqlExpr).unwrap();
+    let statement = result.protobuf.stmts.first().unwrap();
+    let Some(NodeEnum::SelectStmt(select)) = statement.stmt.as_ref().and_then(|node| node.node.as_ref()) else {
+        panic!("PL/pgSQL expression mode must return a SelectStmt");
+    };
+    assert_eq!(select.target_list.len(), 1);
+    assert!(select.from_clause.is_empty());
+}
+
+#[test]
+fn it_preserves_all_plpgsql_assignment_shapes() {
+    for (source, mode, expected_names) in [
+        ("value := 1", pg_query::ParseMode::PlPgSqlAssign1, 1),
+        ("record.field := value + 1", pg_query::ParseMode::PlPgSqlAssign2, 2),
+        ("record.field.part := 1", pg_query::ParseMode::PlPgSqlAssign3, 3),
+    ] {
+        let result = pg_query::parse_with_mode(source, mode).unwrap();
+        let statement = result.protobuf.stmts.first().unwrap();
+        let Some(NodeEnum::PlassignStmt(assign)) = statement.stmt.as_ref().and_then(|node| node.node.as_ref()) else {
+            panic!("PL/pgSQL assignment mode must return a PlAssignStmt");
+        };
+        assert_eq!(assign.nnames, expected_names);
+        assert!(assign.val.is_some());
+    }
+}
+
+#[test]
 fn it_parses_simple_query() {
     let result = parse("SELECT 1").unwrap();
     assert_eq!(result.tables().len(), 0);

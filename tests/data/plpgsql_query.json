@@ -30,7 +30,8 @@
             },
             {
               "PLpgSQL_stmt_return": {
-                "lineno": 6
+                "lineno": 6,
+                "retvarno": 2
               }
             }
           ],

@@ -16,7 +16,8 @@
                 "then_body": [
                   {
                     "PLpgSQL_stmt_return": {
-                      "lineno": 4
+                      "lineno": 4,
+                      "retvarno": 0
                     }
                   }
                 ]

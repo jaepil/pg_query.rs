@@ -15,6 +15,18 @@ pub struct Fingerprint {
     pub hex: String,
 }
 
+/// PostgreSQL raw-parser entry mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum ParseMode {
+    Default = 0,
+    TypeName = 1,
+    PlPgSqlExpr = 2,
+    PlPgSqlAssign1 = 3,
+    PlPgSqlAssign2 = 4,
+    PlPgSqlAssign3 = 5,
+}
+
 /// Parses the given SQL statement into the given abstract syntax tree.
 ///
 /// # Example
@@ -29,8 +41,16 @@ pub struct Fingerprint {
 /// assert!(matches!(result.protobuf.nodes()[0].0, NodeRef::SelectStmt(_)));
 /// ```
 pub fn parse(statement: &str) -> Result<ParseResult> {
+    parse_with_mode(statement, ParseMode::Default)
+}
+
+/// Parses input using one of PostgreSQL's raw-parser modes.
+///
+/// PL/pgSQL consumers should use the mode recorded on `PLpgSQL_expr`
+/// instead of rewriting an expression or assignment into another SQL form.
+pub fn parse_with_mode(statement: &str, mode: ParseMode) -> Result<ParseResult> {
     let input = CString::new(statement)?;
-    let result = unsafe { pg_query_parse_protobuf(input.as_ptr()) };
+    let result = unsafe { pg_query_parse_protobuf_opts(input.as_ptr(), mode as i32) };
     let parse_result = if !result.error.is_null() {
         let message = unsafe { CStr::from_ptr((*result.error).message) }.to_string_lossy().to_string();
         Err(Error::Parse(message))
