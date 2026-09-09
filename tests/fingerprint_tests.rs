@@ -250,7 +250,8 @@ fn it_works() {
     assert_eq!(result.hex, "d993959a33d627d4");
 
     let result = fingerprint("START TRANSACTION READ WRITE").unwrap();
-    assert_eq!(result.hex, "4ca25828c835d55a");
+    assert_eq!(result.hex, "d2bd82412b9a616d");
+    assert_ne!(result.hex, fingerprint("START TRANSACTION").unwrap().hex);
 
     let result = fingerprint("DECLARE cursor_123 CURSOR FOR SELECT * FROM test WHERE id = 123").unwrap();
     assert_eq!(result.hex, "d2bec62d2a7ec7cb");
