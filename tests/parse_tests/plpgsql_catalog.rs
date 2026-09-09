@@ -30,10 +30,43 @@ fn catalog_domain_declarations_keep_defaults_and_scalar_datums() {
     let local =
         datums.iter().filter_map(|datum| datum.get("PLpgSQL_var")).find(|datum| datum["refname"] == "local_value").expect("domain is a scalar datum");
     assert_eq!(local["datatype"]["PLpgSQL_type"]["typname"], "positive");
+    assert_eq!(local["datatype"]["PLpgSQL_type"]["typoid"], 900002);
     assert_eq!(local["isconst"], true);
     assert_eq!(local["notnull"], true);
     assert!(local.get("default_val").is_some());
     assert!(datums.iter().any(|datum| datum["PLpgSQL_var"]["refname"] == "arg"));
+}
+
+#[test]
+fn catalog_type_oids_distinguish_quoted_domains_and_their_arrays() {
+    let mut catalog = catalog();
+    catalog.types[0].name = "Mixed.Domain".into();
+    catalog.types.push(PlpgsqlType {
+        oid: 900003,
+        namespace_oid: 900001,
+        name: "_Mixed.Domain".into(),
+        length: -1,
+        by_value: false,
+        type_kind: b'b',
+        category: b'A',
+        alignment: b'i',
+        storage: b'x',
+        array_oid: 0,
+        element_oid: 900002,
+        base_type_oid: 0,
+        collation_oid: 0,
+        subscript_handler_oid: 6179,
+    });
+    let parsed = parse_plpgsql_with_catalog(
+        r#"CREATE FUNCTION f() RETURNS integer AS $$ DECLARE scalar_value "Mixed.Domain" := 7; array_value "Mixed.Domain"[] := ARRAY[7]; BEGIN RETURN scalar_value; END $$ LANGUAGE plpgsql"#,
+        &catalog,
+    ).unwrap();
+    let datums = parsed[0]["PLpgSQL_function"]["datums"].as_array().unwrap();
+    for (name, oid) in [("scalar_value", 900002), ("array_value", 900003)] {
+        let variable = datums.iter().filter_map(|datum| datum.get("PLpgSQL_var")).find(|datum| datum["refname"] == name).unwrap();
+        assert_eq!(variable["datatype"]["PLpgSQL_type"]["typoid"], oid);
+        assert!(variable.get("default_val").is_some());
+    }
 }
 
 #[test]
