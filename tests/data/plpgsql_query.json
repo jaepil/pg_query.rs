@@ -35,6 +35,9 @@
               }
             }
           ],
+          "initvarnos": [
+            2
+          ],
           "lineno": 4
         }
       },
