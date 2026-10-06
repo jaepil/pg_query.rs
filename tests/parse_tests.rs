@@ -14,6 +14,9 @@ use pg_query::{
 mod support;
 use support::*;
 
+#[path = "parse_tests/string_options.rs"]
+mod string_options;
+
 #[test]
 fn it_parses_plpgsql_expressions_without_rewriting_source() {
     let result = pg_query::parse_with_mode("value + 1", pg_query::ParseMode::PlPgSqlExpr).unwrap();
