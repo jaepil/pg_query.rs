@@ -88,7 +88,7 @@ pub(crate) unsafe extern "C" fn capture_diagnostic(context: *mut c_void, diagnos
 
 pub(crate) unsafe fn parse_error(error: *const PgQueryError, diagnostics: &[Diagnostic]) -> Error {
     if let Some(diagnostic) = diagnostics.iter().rev().find(|diagnostic| diagnostic.severity >= 21) {
-        Error::ParseDiagnostic(diagnostic.clone())
+        Error::ParseDiagnostic(Box::new(diagnostic.clone()))
     } else {
         Error::Parse(CStr::from_ptr((*error).message).to_string_lossy().into_owned())
     }
