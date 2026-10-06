@@ -1906,3 +1906,6 @@ fn it_parses_DROP_TYPE() {
 )"#
     );
 }
+
+#[path = "parse_tests/plpgsql_catalog.rs"]
+mod plpgsql_catalog;
