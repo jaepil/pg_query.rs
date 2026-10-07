@@ -55,7 +55,7 @@ pub fn parse_with_mode(statement: &str, mode: ParseMode) -> Result<ParseResult> 
         let message = unsafe { CStr::from_ptr((*result.error).message) }.to_string_lossy().to_string();
         Err(Error::Parse(message))
     } else {
-        let data = unsafe { std::slice::from_raw_parts(result.parse_tree.data as *const u8, result.parse_tree.len as usize) };
+        let data = unsafe { std::slice::from_raw_parts(result.parse_tree.data as *const u8, result.parse_tree.len) };
         let stderr = unsafe { CStr::from_ptr(result.stderr_buffer) }.to_string_lossy().to_string();
         protobuf::ParseResult::decode(data).map_err(Error::Decode).map(|result| ParseResult::new(result, stderr))
     };
@@ -261,7 +261,7 @@ pub fn scan_with_options(sql: &str, options: crate::ParseOptions) -> Result<prot
         let message = unsafe { CStr::from_ptr((*result.error).message) }.to_string_lossy().to_string();
         Err(Error::Scan(message))
     } else {
-        let data = unsafe { std::slice::from_raw_parts(result.pbuf.data as *const u8, result.pbuf.len as usize) };
+        let data = unsafe { std::slice::from_raw_parts(result.pbuf.data as *const u8, result.pbuf.len) };
         protobuf::ScanResult::decode(data).map_err(Error::Decode)
     };
     unsafe { pg_query_free_scan_result(result) };
