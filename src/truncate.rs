@@ -21,7 +21,7 @@ struct PossibleTruncation {
 }
 
 pub fn truncate(protobuf: &protobuf::ParseResult, max_length: usize) -> Result<String> {
-    let mut output = protobuf.deparse()?;
+    let mut output = protobuf.deparse(DeparseOptions::default())?;
     if output.len() <= max_length {
         return Ok(output);
     }
@@ -142,7 +142,7 @@ pub fn truncate(protobuf: &protobuf::ParseResult, max_length: usize) -> Result<S
                             attr: TruncationAttr::CTEQuery,
                             node,
                             depth: depth + 1,
-                            length: cte.deparse()?.len() as i32,
+                            length: cte.deparse(DeparseOptions::default())?.len() as i32,
                         });
                     }
                 }
@@ -229,7 +229,7 @@ pub fn truncate(protobuf: &protobuf::ParseResult, max_length: usize) -> Result<S
                 }
                 (NodeMut::CommonTableExpr(s), TruncationAttr::CTEQuery) => {
                     let s = s.as_mut().ok_or(Error::InvalidPointer)?;
-                    let old = std::mem::replace(&mut s.ctequery, Some(dummy_select(vec![], Some(dummy_column()), vec![])));
+                    let old = s.ctequery.replace(dummy_select(vec![], Some(dummy_column()), vec![]));
                     if let Some(s) = old {
                         let node = s.node.ok_or(Error::InvalidPointer)?;
                         truncations.retain(|t| t.node.to_enum().unwrap() != node);
@@ -249,8 +249,8 @@ pub fn truncate(protobuf: &protobuf::ParseResult, max_length: usize) -> Result<S
                 }
                 _ => panic!("unimplemented truncation"),
             }
-            output = protobuf.deparse()?;
-            output = output.replace("SELECT WHERE \"…\"", "...").replace("\"…\"", "...");
+            output = protobuf.deparse(DeparseOptions::default())?;
+            output = output.replace("SELECT WHERE \"\u{2026}\"", "...").replace("\"\u{2026}\"", "...");
             // the unwanted AS doesn't happen in the Ruby version. I'm not sure where it's coming from
             output = output.replace("SELECT ... AS ...", "SELECT ...");
             if output.len() <= max_length {
@@ -272,27 +272,27 @@ fn truncate_str(string: &str, max_chars: usize) -> &str {
 }
 
 fn select_target_list_len(nodes: Vec<Node>) -> Result<i32> {
-    let fragment = dummy_select(nodes, None, vec![]).deparse()?;
+    let fragment = dummy_select(nodes, None, vec![]).deparse(DeparseOptions::default())?;
     Ok(fragment.len() as i32 - 7) // "SELECT "
 }
 
 fn select_values_lists_len(nodes: Vec<Node>) -> Result<i32> {
-    let fragment = dummy_select(vec![], None, nodes).deparse()?;
+    let fragment = dummy_select(vec![], None, nodes).deparse(DeparseOptions::default())?;
     Ok(fragment.len() as i32 - 7) // "SELECT "
 }
 
 fn update_target_list_len(nodes: Vec<Node>) -> Result<i32> {
-    let fragment = dummy_update(nodes).deparse()?;
+    let fragment = dummy_update(nodes).deparse(DeparseOptions::default())?;
     Ok(fragment.len() as i32 - 13) // "UPDATE x SET "
 }
 
 fn where_clause_len(node: Box<Node>) -> Result<i32> {
-    let fragment = dummy_select(vec![], Some(node), vec![]).deparse()?;
+    let fragment = dummy_select(vec![], Some(node), vec![]).deparse(DeparseOptions::default())?;
     Ok(fragment.len() as i32 - 13) // "SELECT WHERE "
 }
 
 fn cols_len(nodes: Vec<Node>) -> Result<i32> {
-    let fragment = dummy_insert(nodes).deparse()?;
+    let fragment = dummy_insert(nodes).deparse(DeparseOptions::default())?;
     Ok(fragment.len() as i32 - 31) // "INSERT INTO x () DEFAULT VALUES"
 }
 
@@ -300,7 +300,7 @@ fn dummy_column() -> Box<Node> {
     Box::new(Node {
         node: Some(NodeEnum::ColumnRef(protobuf::ColumnRef {
             location: 0,
-            fields: vec![Node { node: Some(NodeEnum::String(protobuf::String { sval: "…".to_string() })) }],
+            fields: vec![Node { node: Some(NodeEnum::String(protobuf::String { sval: "\u{2026}".to_string() })) }],
         })),
     })
 }
@@ -308,7 +308,7 @@ fn dummy_column() -> Box<Node> {
 fn dummy_target() -> Node {
     Node {
         node: Some(NodeEnum::ResTarget(Box::new(protobuf::ResTarget {
-            name: "…".to_string(),
+            name: "\u{2026}".to_string(),
             location: 0,
             indirection: vec![],
             val: Some(dummy_column()),

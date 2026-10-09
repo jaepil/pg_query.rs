@@ -138,3 +138,27 @@ fn scanner_preserves_legacy_quote_boundaries() {
     assert!(pg_query::scan_with_options(sql, ParseOptions::default()).is_err());
     assert_eq!(literal(r"SELECT 'a\nb'", ParseOptions::default()), (r"a\nb".into(), vec![]));
 }
+
+#[test]
+fn structured_parser_options_work_with_upstream_apis() {
+    let sql = r"SELECT 'a\'b' FROM contacts";
+    let options = ParseOptions { escape_string_warning: false, ..legacy() };
+    let parsed = pg_query::parse(sql, options).unwrap();
+    assert_eq!(parsed.tables(), ["contacts"]);
+    assert_eq!(pg_query::summary(sql, options, -1).unwrap().tables(), ["contacts"]);
+    assert!(pg_query::fingerprint(sql, options, 0).is_ok());
+    assert!(pg_query::parse(sql, 0).is_err());
+}
+
+#[test]
+fn serialization_errors_keep_structured_diagnostics() {
+    let sql = format!("SELECT 1{}", "%1".repeat(100_000));
+    let outcome = parse_with_options(&sql, ParseOptions::default());
+    let Error::ParseDiagnostic(diagnostic) = outcome.result.unwrap_err() else {
+        panic!("structured serialization error");
+    };
+    assert_eq!(diagnostic.sqlstate, "54001");
+    assert!(diagnostic.message.contains("stack depth limit exceeded"));
+    assert_eq!(outcome.diagnostics.last(), Some(diagnostic.as_ref()));
+    assert!(pg_query::parse("SELECT 1", 0).is_ok());
+}

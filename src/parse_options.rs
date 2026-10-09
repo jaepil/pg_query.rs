@@ -32,6 +32,12 @@ impl ParseOptions {
     }
 }
 
+impl From<ParseOptions> for crate::ParserOptions {
+    fn from(options: ParseOptions) -> Self {
+        options.bits().into()
+    }
+}
+
 /// PostgreSQL ErrorData fields copied while the parser owns their backing storage.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Diagnostic {

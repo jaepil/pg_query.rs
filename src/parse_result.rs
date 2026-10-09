@@ -19,8 +19,8 @@ macro_rules! cast {
 }
 
 impl protobuf::ParseResult {
-    pub fn deparse(&self) -> Result<String> {
-        crate::deparse(self)
+    pub fn deparse(&self, options: DeparseOptions) -> Result<String> {
+        crate::deparse(self, options)
     }
 
     // Note: this doesn't iterate over every possible node type, since we only care about a subset of nodes.
@@ -156,7 +156,7 @@ impl ParseResult {
                         })
                         .rev()
                         .collect();
-                    if f.len() > 0 {
+                    if !f.is_empty() {
                         filter_columns.insert((f.get(1).cloned(), f[0].to_string()));
                     }
                 }
@@ -249,8 +249,8 @@ impl ParseResult {
     }
 
     /// Converts the parsed query back into a SQL string
-    pub fn deparse(&self) -> Result<String> {
-        crate::deparse(&self.protobuf)
+    pub fn deparse(&self, options: DeparseOptions) -> Result<String> {
+        crate::deparse(&self.protobuf, options)
     }
 
     /// Intelligently truncates queries to a max length.
@@ -259,7 +259,7 @@ impl ParseResult {
     ///
     /// ```rust
     /// let query = "INSERT INTO \"x\" (a, b, c, d, e, f) VALUES ($1)";
-    /// let result = pg_query::parse(query).unwrap();
+    /// let result = pg_query::parse(query, 0).unwrap();
     /// assert_eq!(result.truncate(32).unwrap(), "INSERT INTO x (...) VALUES (...)")
     /// ```
     pub fn truncate(&self, max_length: usize) -> Result<String> {

@@ -33,7 +33,7 @@ macro_rules! assert_eq {
     };
 }
 
-pub fn assert_vec_matches<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) {
+pub fn assert_vec_matches<T: PartialEq>(a: &[T], b: &[T]) {
     let matching = a.iter().zip(b.iter()).filter(|&(a, b)| a == b).count();
     assert!(matching == a.len() && matching == b.len())
 }

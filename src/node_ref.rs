@@ -277,11 +277,14 @@ pub enum NodeRef<'a> {
 
 impl<'a> NodeRef<'a> {
     // TODO: `deparseStmt` in pg_query_deparse.c panics on unexpected nodes. instead, return a Rust error
-    pub fn deparse(&self) -> Result<String> {
-        crate::deparse(&protobuf::ParseResult {
-            version: crate::bindings::PG_VERSION_NUM as i32,
-            stmts: vec![protobuf::RawStmt { stmt: Some(Box::new(Node { node: Some(self.to_enum()) })), stmt_location: 0, stmt_len: 0 }],
-        })
+    pub fn deparse(&self, options: DeparseOptions) -> Result<String> {
+        crate::deparse(
+            &protobuf::ParseResult {
+                version: crate::bindings::PG_VERSION_NUM as i32,
+                stmts: vec![protobuf::RawStmt { stmt: Some(Box::new(Node { node: Some(self.to_enum()) })), stmt_location: 0, stmt_len: 0 }],
+            },
+            options,
+        )
     }
 
     pub fn to_enum(&self) -> NodeEnum {
@@ -331,7 +334,7 @@ impl<'a> NodeRef<'a> {
             NodeRef::NextValueExpr(n) => NodeEnum::NextValueExpr(Box::new((*n).clone())),
             NodeRef::InferenceElem(n) => NodeEnum::InferenceElem(Box::new((*n).clone())),
             NodeRef::TargetEntry(n) => NodeEnum::TargetEntry(Box::new((*n).clone())),
-            NodeRef::RangeTblRef(n) => NodeEnum::RangeTblRef((*n).clone()),
+            NodeRef::RangeTblRef(n) => NodeEnum::RangeTblRef(**n),
             NodeRef::JoinExpr(n) => NodeEnum::JoinExpr(Box::new((*n).clone())),
             NodeRef::FromExpr(n) => NodeEnum::FromExpr(Box::new((*n).clone())),
             NodeRef::OnConflictExpr(n) => NodeEnum::OnConflictExpr(Box::new((*n).clone())),
@@ -380,7 +383,7 @@ impl<'a> NodeRef<'a> {
             NodeRef::AlterSeqStmt(n) => NodeEnum::AlterSeqStmt((*n).clone()),
             NodeRef::VariableSetStmt(n) => NodeEnum::VariableSetStmt((*n).clone()),
             NodeRef::VariableShowStmt(n) => NodeEnum::VariableShowStmt((*n).clone()),
-            NodeRef::DiscardStmt(n) => NodeEnum::DiscardStmt((*n).clone()),
+            NodeRef::DiscardStmt(n) => NodeEnum::DiscardStmt(**n),
             NodeRef::CreateTrigStmt(n) => NodeEnum::CreateTrigStmt(Box::new((*n).clone())),
             NodeRef::CreatePlangStmt(n) => NodeEnum::CreatePlangStmt((*n).clone()),
             NodeRef::CreateRoleStmt(n) => NodeEnum::CreateRoleStmt((*n).clone()),
@@ -389,7 +392,7 @@ impl<'a> NodeRef<'a> {
             NodeRef::LockStmt(n) => NodeEnum::LockStmt((*n).clone()),
             NodeRef::ConstraintsSetStmt(n) => NodeEnum::ConstraintsSetStmt((*n).clone()),
             NodeRef::ReindexStmt(n) => NodeEnum::ReindexStmt((*n).clone()),
-            NodeRef::CheckPointStmt(n) => NodeEnum::CheckPointStmt((*n).clone()),
+            NodeRef::CheckPointStmt(n) => NodeEnum::CheckPointStmt(**n),
             NodeRef::CreateSchemaStmt(n) => NodeEnum::CreateSchemaStmt((*n).clone()),
             NodeRef::AlterDatabaseStmt(n) => NodeEnum::AlterDatabaseStmt((*n).clone()),
             NodeRef::AlterDatabaseSetStmt(n) => NodeEnum::AlterDatabaseSetStmt((*n).clone()),
@@ -454,10 +457,10 @@ impl<'a> NodeRef<'a> {
             NodeRef::AlterStatsStmt(n) => NodeEnum::AlterStatsStmt(Box::new((*n).clone())),
             NodeRef::AExpr(n) => NodeEnum::AExpr(Box::new((*n).clone())),
             NodeRef::ColumnRef(n) => NodeEnum::ColumnRef((*n).clone()),
-            NodeRef::ParamRef(n) => NodeEnum::ParamRef((*n).clone()),
+            NodeRef::ParamRef(n) => NodeEnum::ParamRef(**n),
             NodeRef::AConst(n) => NodeEnum::AConst((*n).clone()),
             NodeRef::FuncCall(n) => NodeEnum::FuncCall(Box::new((*n).clone())),
-            NodeRef::AStar(n) => NodeEnum::AStar((*n).clone()),
+            NodeRef::AStar(n) => NodeEnum::AStar(**n),
             NodeRef::AIndices(n) => NodeEnum::AIndices(Box::new((*n).clone())),
             NodeRef::AIndirection(n) => NodeEnum::AIndirection(Box::new((*n).clone())),
             NodeRef::AArrayExpr(n) => NodeEnum::AArrayExpr((*n).clone()),
@@ -481,7 +484,7 @@ impl<'a> NodeRef<'a> {
             NodeRef::RangeTblFunction(n) => NodeEnum::RangeTblFunction(Box::new((*n).clone())),
             NodeRef::TableSampleClause(n) => NodeEnum::TableSampleClause(Box::new((*n).clone())),
             NodeRef::WithCheckOption(n) => NodeEnum::WithCheckOption(Box::new((*n).clone())),
-            NodeRef::SortGroupClause(n) => NodeEnum::SortGroupClause((*n).clone()),
+            NodeRef::SortGroupClause(n) => NodeEnum::SortGroupClause(**n),
             NodeRef::GroupingSet(n) => NodeEnum::GroupingSet((*n).clone()),
             NodeRef::WindowClause(n) => NodeEnum::WindowClause(Box::new((*n).clone())),
             NodeRef::ObjectWithArgs(n) => NodeEnum::ObjectWithArgs((*n).clone()),
@@ -490,7 +493,7 @@ impl<'a> NodeRef<'a> {
             NodeRef::TableLikeClause(n) => NodeEnum::TableLikeClause((*n).clone()),
             NodeRef::FunctionParameter(n) => NodeEnum::FunctionParameter(Box::new((*n).clone())),
             NodeRef::LockingClause(n) => NodeEnum::LockingClause((*n).clone()),
-            NodeRef::RowMarkClause(n) => NodeEnum::RowMarkClause((*n).clone()),
+            NodeRef::RowMarkClause(n) => NodeEnum::RowMarkClause(**n),
             NodeRef::XmlSerialize(n) => NodeEnum::XmlSerialize(Box::new((*n).clone())),
             NodeRef::WithClause(n) => NodeEnum::WithClause((*n).clone()),
             NodeRef::InferClause(n) => NodeEnum::InferClause(Box::new((*n).clone())),
@@ -505,10 +508,10 @@ impl<'a> NodeRef<'a> {
             NodeRef::PartitionCmd(n) => NodeEnum::PartitionCmd((*n).clone()),
             NodeRef::VacuumRelation(n) => NodeEnum::VacuumRelation((*n).clone()),
             NodeRef::InlineCodeBlock(n) => NodeEnum::InlineCodeBlock((*n).clone()),
-            NodeRef::CallContext(n) => NodeEnum::CallContext((*n).clone()),
-            NodeRef::Integer(n) => NodeEnum::Integer((*n).clone()),
+            NodeRef::CallContext(n) => NodeEnum::CallContext(**n),
+            NodeRef::Integer(n) => NodeEnum::Integer(**n),
             NodeRef::Float(n) => NodeEnum::Float((*n).clone()),
-            NodeRef::Boolean(n) => NodeEnum::Boolean((*n).clone()),
+            NodeRef::Boolean(n) => NodeEnum::Boolean(**n),
             NodeRef::String(n) => NodeEnum::String((*n).clone()),
             NodeRef::BitString(n) => NodeEnum::BitString((*n).clone()),
             NodeRef::List(n) => NodeEnum::List((*n).clone()),
@@ -528,8 +531,8 @@ impl<'a> NodeRef<'a> {
             NodeRef::MergeWhenClause(n) => NodeEnum::MergeWhenClause(Box::new((*n).clone())),
             NodeRef::PublicationObjSpec(n) => NodeEnum::PublicationObjSpec(Box::new((*n).clone())),
             NodeRef::PublicationTable(n) => NodeEnum::PublicationTable(Box::new((*n).clone())),
-            NodeRef::JsonFormat(n) => NodeEnum::JsonFormat((*n).clone()),
-            NodeRef::JsonReturning(n) => NodeEnum::JsonReturning((*n).clone()),
+            NodeRef::JsonFormat(n) => NodeEnum::JsonFormat(**n),
+            NodeRef::JsonReturning(n) => NodeEnum::JsonReturning(**n),
             NodeRef::JsonValueExpr(n) => NodeEnum::JsonValueExpr(Box::new((*n).clone())),
             NodeRef::JsonConstructorExpr(n) => NodeEnum::JsonConstructorExpr(Box::new((*n).clone())),
             NodeRef::JsonIsPredicate(n) => NodeEnum::JsonIsPredicate(Box::new((*n).clone())),
