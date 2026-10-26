@@ -1,1 +1,2 @@
 tests/data/* binary
+*.rs text eol=lf
